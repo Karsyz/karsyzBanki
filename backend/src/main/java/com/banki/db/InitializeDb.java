@@ -22,11 +22,13 @@ public class InitializeDb {
                          "email TEXT UNIQUE)");
 
             // Example: create cards table
-            stmt.execute("CREATE TABLE IF NOT EXISTS cards (" +
+           stmt.execute("CREATE TABLE IF NOT EXISTS cards (" +
                          "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                         "title TEXT NOT NULL, " +
-                         "deck_id INTEGER, " +
-                         "FOREIGN KEY(deck_id) REFERENCES decks(id))");
+                         "deckId INTEGER, " +
+                         "question TEXT NOT NULL, " +
+                         "answer TEXT NOT NULL, " +
+                         "FOREIGN KEY(deckId) REFERENCES decks(id))"                        
+                         );
 
             // Example: create decks table
             stmt.execute("CREATE TABLE IF NOT EXISTS decks (" +

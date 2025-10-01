@@ -10,16 +10,24 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.banki.models.Card;
+
 public class CardDb {
 
     private static final Logger logger = LoggerFactory.getLogger(Database.class);
 
     // CREATE
-    public void addCard(int deckId, String question, String answer) {
+    public void addCard(Integer deckId, String question, String answer) {
         String sql = "INSERT INTO cards(deckId, question, answer) VALUES(?, ?, ?)";
         try (Connection conn = Database.getConnection(); 
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, deckId);
+
+            if(deckId != null) {
+                pstmt.setInt(1, deckId);
+            }else {
+                pstmt.setNull(1, java.sql.Types.INTEGER);
+            }
+
             pstmt.setString(2, question);
             pstmt.setString(3, answer);
             pstmt.executeUpdate();
@@ -29,15 +37,20 @@ public class CardDb {
     }
 
     // READ ALL CARDS FOR A DECK
-    public List<String> getCardsForDeck(int deckId) {
-        List<String> cards = new ArrayList<>();
+    public List<Card> getCardsForDeck(int deckId) {
+        List<Card> cards = new ArrayList<>();
         String sql = "SELECT * FROM cards WHERE deckId=?";
         try (Connection conn = Database.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, deckId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    String card = "Q: " + rs.getString("question") + " | A: " + rs.getString("answer");
+                    Card card = new Card(
+                        rs.getInt("id"), 
+                        rs.getInt("deckId") != 0 ? rs.getInt("deck_id") : null, 
+                        rs.getString("question"), 
+                        rs.getString("answer")
+                    );
                     cards.add(card);
                 }
             }
@@ -46,6 +59,38 @@ public class CardDb {
         }
         return cards;
     }
+
+    // GET SINGLE CARD
+    public Card getCard(int cardId) {
+        String sql = "SELECT id, deckId, question, answer FROM cards WHERE id = ?";
+        try (Connection conn = Database.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, cardId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if(rs.next()) {
+
+                    Integer deckId = rs.getInt("deckId");
+                    if(rs.wasNull()) {
+                        deckId = null;
+                    }
+
+                    return new Card(
+                        rs.getInt("id"), 
+                        deckId, 
+                        rs.getString("question"), 
+                        rs.getString("answer")
+                    );
+
+                } else {
+                    return null;
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to initialize database", e);
+            return null;
+        }
+    }
+
 
     // UPDATE
     public void updateCard(int id, String newQuestion, String newAnswer) {
